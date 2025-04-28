@@ -1,0 +1,41 @@
+async function enviarScript(scriptText) {
+    const lines = scriptText.split(/[\n\t]+/).map(line => line.trim()).filter(line => line);
+
+    const main = document.querySelector("#main");
+    const textarea = main?.querySelector(`div[contenteditable="true"]`);
+    
+    if (!textarea) throw new Error("Não há uma conversa aberta");
+
+    for (const line of lines) {
+        console.log("Enviando:", line);
+
+        textarea.focus();
+        document.execCommand('insertText', false, line);
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+        // Espera o botão de enviar aparecer
+        let sendButton = null;
+        for (let i = 0; i < 10; i++) { // tenta por até 1 segundo (10x de 100ms)
+            sendButton = main.querySelector(`[data-testid="send"]`) || main.querySelector(`[data-icon="send"]`);
+            if (sendButton) break;
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        if (sendButton) {
+            sendButton.click();
+        } else {
+            console.error("Botão de enviar não encontrado após esperar!");
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 500)); // espera entre mensagens
+    }
+
+    return lines.length;
+}
+
+// Exemplo de uso:
+enviarScript(`Mensagem 1
+Mensagem 2
+Mensagem 3`)
+.then(qtd => console.log(`Código finalizado, ${qtd} mensagens enviadas`))
+.catch(console.error);
